@@ -1,14 +1,25 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Button } from "@the-right-party/ui/components/button";
+import { cn } from "@the-right-party/ui/lib/utils";
 
+import bg1 from "@/assets/bg1.jpg";
+import bg2 from "@/assets/bg2.jpg";
+import { GoingLanding } from "@/components/party/going-roll";
 import { GoogleButton } from "@/components/party/google-button";
 import { IpodTicket } from "@/components/party/ipod-ticket";
 import { NightField } from "@/components/party/night-field";
+import { PartyCta } from "@/components/party/party-cta";
 import { SprayYearLockup } from "@/components/party/spray-year-lockup";
 import { authClient } from "@/lib/auth-client";
 import { formatPhp, formatWhen } from "@/lib/format";
 import { trpc } from "@/utils/trpc";
+
+const HOST_INSTAGRAM = {
+  handle: "tristan.nikolai",
+  href: "https://instagram.com/tristan.nikolai",
+} as const;
+
+const VENUE_MAPS = "https://maps.app.goo.gl/zuKZGFp3ef2thzvdA";
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
@@ -33,66 +44,114 @@ function HomeComponent() {
 
   return (
     <NightField>
-      <main className="mx-auto grid max-w-6xl gap-10 px-4 pt-20 pb-24 md:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)] md:items-end md:px-8 md:pt-24">
+      <main className="mx-auto grid min-h-[100dvh] max-w-6xl items-center gap-12 px-4 pt-24 pb-20 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] md:gap-16 md:px-8 md:pt-28 md:pb-28">
         <section className="min-w-0">
-          <SprayYearLockup />
-          <p className="mt-6 max-w-[28ch] text-lg leading-snug text-ink md:text-xl">
-            You dressed for the wrong party. Come to the right one.
-          </p>
-          <dl className="mt-10 grid max-w-md gap-3 text-sm text-ink-2">
-            <div className="flex justify-between gap-4 border-b border-rule py-2">
-              <dt>Where</dt>
-              <dd className="text-ink">{config.data?.venue ?? "Tagu Cafe and Bar"}</dd>
+          <div className="w-fit max-w-full">
+            <SprayYearLockup />
+            <p className="font-display relative z-20 mt-4 w-full min-w-0 origin-center rotate-[-9deg] text-center text-[clamp(1.05rem,4.6vw,1.85rem)] leading-none text-ink md:mt-5">
+              <span className="block">its time for you to</span>
+              <span className="mt-[0.12em] block">Move On</span>
+            </p>
+          </div>
+          <dl className="mt-12 grid max-w-sm gap-6">
+            <div className="min-w-0">
+              <dt className="font-pixel text-[10px] tracking-[0.2em] text-ink-2">Where</dt>
+              <dd className="mt-1 font-year text-2xl leading-[0.95] tracking-wide text-ink md:text-3xl">
+                {config.data?.venue ?? "Tagu Cafe and Bar"}
+              </dd>
             </div>
-            <div className="flex justify-between gap-4 border-b border-rule py-2">
-              <dt>When</dt>
-              <dd className="text-ink">{formatWhen(config.data?.startsAt)}</dd>
+            <div className="min-w-0">
+              <dt className="font-pixel text-[10px] tracking-[0.2em] text-ink-2">When</dt>
+              <dd className="mt-1 font-year text-2xl leading-[0.95] tracking-wide text-ink md:text-3xl">
+                {formatWhen(config.data?.startsAt)}
+              </dd>
             </div>
-            <div className="flex justify-between gap-4 border-b border-rule py-2">
-              <dt>In</dt>
-              <dd className="text-ink">{formatPhp(config.data?.ticketPriceCentavos ?? 100000)}</dd>
+            <div className="min-w-0">
+              <dt className="font-pixel text-[10px] tracking-[0.2em] text-ink-2">In</dt>
+              <dd className="mt-1 font-year text-2xl leading-[0.95] tracking-wide text-ink md:text-3xl">
+                {formatPhp(config.data?.ticketPriceCentavos ?? 100000)}
+              </dd>
             </div>
           </dl>
         </section>
 
-        <IpodTicket>
-          <p className="font-pixel text-[11px] tracking-widest text-magenta">AFTERPARTY</p>
-          <p className="mt-3 text-xl leading-tight text-ink">DCISM after hours at Tagu.</p>
-          <p className="mt-3 text-sm text-ink-2">Sign in, get on the list, pay ₱1,000, show up.</p>
-          <div className="mt-5">
+        <IpodTicket lcdKey={alreadyIn ? "ticket" : session ? "join" : "google"}>
+          <p className="text-xl leading-tight text-ink">
+            {alreadyIn
+              ? "Click here to view your ticket."
+              : "Click here to register and pay."}
+          </p>
+          <div className="mt-6">
             {session ? (
               alreadyIn ? (
-                <Button className="h-11 w-full text-sm" onClick={() => void navigate({ to: "/rsvp" })}>
+                <PartyCta mark onClick={() => void navigate({ to: "/rsvp" })}>
                   Your ticket
-                </Button>
+                </PartyCta>
               ) : (
-                <Button
-                  className="h-11 w-full text-sm"
-                  disabled={join.isPending}
-                  onClick={() => join.mutate({})}
-                >
+                <PartyCta mark disabled={join.isPending} onClick={() => join.mutate({})}>
                   {join.isPending ? "Loading_" : "Join the waitlist"}
-                </Button>
+                </PartyCta>
               )
             ) : (
               <GoogleButton configured={config.data?.googleAuthConfigured ?? false} />
             )}
           </div>
-          {join.isError ? (
-            <p className="mt-3 text-sm text-destructive">{join.error.message}</p>
-          ) : null}
+          {join.isError ? <p className="mt-3 text-sm text-destructive">{join.error.message}</p> : null}
         </IpodTicket>
       </main>
 
-      <section className="bg-magenta-hot px-4 py-10 text-on-magenta md:px-8">
-        <p className="mx-auto max-w-4xl font-year text-2xl tracking-wide md:text-4xl">
-          Dresscode of the main event is Wrong Party. This is The Right Party.
-        </p>
+      <section className="night-band night-band--magenta">
+        <div className="night-band-photo" style={{ backgroundImage: `url(${bg1})` }} aria-hidden />
+        <dl className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 divide-y divide-on-magenta/25 md:grid-cols-3 md:divide-x md:divide-y-0">
+          <div className="px-4 py-6 md:px-8 md:py-8">
+            <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Where</dt>
+            <dd className="mt-3 font-year text-2xl leading-[0.95] tracking-wide md:text-3xl">
+              <a
+                href={VENUE_MAPS}
+                target="_blank"
+                rel="noopener"
+                className="underline decoration-2 underline-offset-4 focus-visible:outline-on-magenta"
+              >
+                {config.data?.venue ?? "Tagu Cafe and Bar"}
+              </a>
+            </dd>
+          </div>
+          <div className="px-4 py-6 md:px-8 md:py-8">
+            <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Pay</dt>
+            <dd className="mt-3">
+              <p className="font-year text-2xl leading-[0.95] tracking-wide md:text-3xl">
+                {formatPhp(config.data?.ticketPriceCentavos ?? 100000)}, drinks included
+              </p>
+              <p className="mt-2 text-sm">GoTyme / InstaPay</p>
+            </dd>
+          </div>
+          <div className="px-4 py-6 md:px-8 md:py-8">
+            <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Questions?</dt>
+            <dd className="mt-3">
+              <p className="text-sm">DM</p>
+              <HostInstagramLink className="mt-1 inline-block font-year text-2xl tracking-wide focus-visible:outline-on-magenta md:text-3xl" />
+            </dd>
+          </div>
+        </dl>
       </section>
 
-      <footer className="px-4 py-8 text-sm text-ink-2 md:px-8">
-        Afterparty · not the Sept 25 5-10 PM main event at IC3 Narra Hall
-      </footer>
+      <div className="night-band night-band--paper">
+        <div className="night-band-photo" style={{ backgroundImage: `url(${bg2})` }} aria-hidden />
+        <div className="relative z-10">
+          <GoingLanding />
+          <footer className="px-4 py-10 text-sm text-ink-2 md:px-8">
+            <p>Disclaimer: we are not affiliated with DCISM or CISCO.</p>
+          </footer>
+        </div>
+      </div>
     </NightField>
+  );
+}
+
+function HostInstagramLink({ className }: { className?: string }) {
+  return (
+    <a href={HOST_INSTAGRAM.href} target="_blank" rel="noreferrer" className={cn("underline decoration-2 underline-offset-4", className)}>
+      @{HOST_INSTAGRAM.handle}
+    </a>
   );
 }
