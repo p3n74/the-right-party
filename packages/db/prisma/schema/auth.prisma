@@ -8,6 +8,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  rsvp          Rsvp?
 
   @@unique([email])
   @@map("user")

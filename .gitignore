@@ -56,3 +56,6 @@ coverage
 .cache
 tmp
 temp
+
+# RSVP receipts and uploaded payment QR files
+apps/server/var/

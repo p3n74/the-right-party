@@ -1,0 +1,114 @@
+enum RsvpStatus {
+  WAITLISTED
+  PAYMENT_PENDING
+  PAYMENT_SUBMITTED
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  GCASH
+  MAYA
+  OTHER
+}
+
+enum PaymentReview {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model EventConfig {
+  id                     Int      @id @default(1)
+  slug                   String   @unique @default("afterparty")
+  name                   String   @default("The Right Party")
+  venue                  String?
+  startsAt               DateTime?
+  endsAt                 DateTime?
+  dresscode              String?
+  mainEventName          String   @default("DCISM Acquaintance Party")
+  mainEventVenue         String   @default("IC3 Convention Center, Narra Hall")
+  mainEventStartsAt      DateTime?
+  mainEventEndsAt        DateTime?
+  mainEventDresscode     String   @default("Wrong Party")
+  capacity               Int      @default(80)
+  ticketPriceCentavos    Int      @default(100000)
+  currency               String   @default("PHP")
+  paymentWindowHours     Int      @default(48)
+  requireReceipt         Boolean  @default(true)
+  waitlistOpen           Boolean  @default(true)
+  paymentsOpen           Boolean  @default(true)
+  allowRejoinAfterReject Boolean  @default(false)
+  gcashName              String?
+  gcashNumber            String?
+  mayaName               String?
+  mayaNumber             String?
+  gcashQrPath            String?
+  mayaQrPath             String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("event_config")
+}
+
+model Rsvp {
+  id                 String     @id @default(cuid())
+  userId             String     @unique
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             RsvpStatus
+  waitlistedAt       DateTime   @default(now())
+  slotClaimedAt      DateTime?
+  paymentSubmittedAt DateTime?
+  confirmedAt        DateTime?
+  cancelledAt        DateTime?
+  rejectedAt         DateTime?
+  expiresAt          DateTime?
+  displayName        String?
+  phone              String?
+  affiliation        String?
+  guestNotes         String?
+  adminNotes         String?
+  rejectReason       String?
+  payments           Payment[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([status])
+  @@index([status, waitlistedAt])
+  @@index([status, expiresAt])
+  @@map("rsvp")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  rsvpId          String
+  rsvp            Rsvp          @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+  method          PaymentMethod
+  amountCentavos  Int
+  referenceNote   String?
+  receiptKey      String?
+  review          PaymentReview @default(PENDING)
+  reviewedAt      DateTime?
+  reviewedByEmail String?
+  reviewNote      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([rsvpId, createdAt])
+  @@map("payment")
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorEmail String
+  action     String
+  rsvpId     String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([rsvpId])
+  @@map("admin_audit_log")
+}

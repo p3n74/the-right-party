@@ -38,6 +38,7 @@
     "db:studio": "turbo run db:studio -F @the-right-party/db --",
     "db:generate": "turbo run db:generate -F @the-right-party/db --",
     "db:migrate": "turbo run db:migrate -F @the-right-party/db --",
+    "db:seed": "bun run --filter @the-right-party/db db:seed",
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",

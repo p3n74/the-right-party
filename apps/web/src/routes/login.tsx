@@ -1,19 +1,38 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
+import { GoogleButton } from "@/components/party/google-button";
+import { IpodTicket } from "@/components/party/ipod-ticket";
+import { NightField } from "@/components/party/night-field";
+import { SprayYearLockup } from "@/components/party/spray-year-lockup";
+import { authClient } from "@/lib/auth-client";
+import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/login")({
-  component: RouteComponent,
+  component: LoginPage,
+  beforeLoad: async () => {
+    const session = await authClient.getSession();
+    if (session.data) {
+      throw redirect({ to: "/rsvp" });
+    }
+  },
 });
 
-function RouteComponent() {
-  const [showSignIn, setShowSignIn] = useState(false);
+function LoginPage() {
+  const config = useQuery(trpc.event.getPublicConfig.queryOptions());
 
-  return showSignIn ? (
-    <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-  ) : (
-    <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
+  return (
+    <NightField density="quiet">
+      <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-10 pt-24">
+        <SprayYearLockup size="compact" className="mb-8" />
+        <IpodTicket>
+          <p className="font-pixel text-[11px] tracking-widest text-magenta">LOCKED</p>
+          <p className="mt-3 text-xl text-ink">Sign in to get on the list.</p>
+          <div className="mt-6">
+            <GoogleButton configured={config.data?.googleAuthConfigured ?? false} />
+          </div>
+        </IpodTicket>
+      </div>
+    </NightField>
   );
 }

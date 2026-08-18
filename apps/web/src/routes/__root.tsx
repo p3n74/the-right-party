@@ -5,6 +5,7 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "@the-right-party/ui/components/sonner";
 
 import Header from "@/components/header";
+import { GrainOverlay } from "@/components/party/grain-overlay";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { trpc } from "@/utils/trpc";
 
@@ -20,11 +21,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: "the-right-party",
+        title: "The Right Party",
       },
       {
         name: "description",
-        content: "the-right-party is a web application",
+        content: "Afterparty of the DCISM Acquaintance Party. Tagu Cafe and Bar. 11 PM.",
       },
     ],
     links: [
@@ -43,14 +44,18 @@ function RootComponent() {
       <ThemeProvider
         attribute="class"
         defaultTheme="dark"
+        forcedTheme="dark"
         disableTransitionOnChange
         storageKey="vite-ui-theme"
       >
-        <div className="grid grid-rows-[auto_1fr] h-svh">
-          <Header />
+        <GrainOverlay />
+        <div className="relative grid min-h-[100dvh]">
+          <div className="absolute inset-x-0 top-0 z-20">
+            <Header />
+          </div>
           <Outlet />
         </div>
-        <Toaster richColors />
+        <Toaster />
       </ThemeProvider>
       <TanStackRouterDevtools position="bottom-left" />
       <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />

@@ -19,11 +19,13 @@
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "hono": "catalog:",
+    "qrcode": "^1.5.4",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@the-right-party/config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/qrcode": "^1.5.6",
     "tsdown": "^0.22.14",
     "typescript": "^6.0.3"
   }

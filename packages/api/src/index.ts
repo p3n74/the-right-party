@@ -1,4 +1,5 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import { isAdminEmail } from "@the-right-party/env/server";
 
 import type { Context } from "./context";
 
@@ -22,4 +23,14 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
       session: ctx.session,
     },
   });
+});
+
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!isAdminEmail(ctx.session.user.email)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin only",
+    });
+  }
+  return next({ ctx });
 });
