@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "scheme": "the-right-party",
+    "userInterfaceStyle": "automatic",
+    "orientation": "default",
+    "web": {
+      "bundler": "metro"
+    },
+    "name": "the-right-party",
+    "slug": "the-right-party",
+    "plugins": ["expo-font"],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

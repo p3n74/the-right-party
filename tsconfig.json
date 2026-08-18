@@ -1,0 +1,3 @@
+{
+  "extends": "@the-right-party/config/tsconfig.base.json"
+}

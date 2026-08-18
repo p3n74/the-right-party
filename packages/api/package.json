@@ -1,0 +1,27 @@
+{
+  "name": "@the-right-party/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@the-right-party/auth": "workspace:*",
+    "@the-right-party/db": "workspace:*",
+    "@the-right-party/env": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@the-right-party/config": "workspace:*",
+    "hono": "catalog:",
+    "typescript": "^6.0.3"
+  }
+}
