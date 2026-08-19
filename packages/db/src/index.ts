@@ -15,7 +15,11 @@ export {
   PrismaClient,
   RsvpStatus,
 } from "../prisma/generated/client";
-export { ensureEventConfig } from "./event-config";
+export {
+  DEFAULT_GCASH_QR_PATH,
+  DEFAULT_PAYMENT_ACCOUNT,
+  ensureEventConfig,
+} from "./event-config";
 
 export function createPrismaClient() {
   const adapter = new PrismaPg({

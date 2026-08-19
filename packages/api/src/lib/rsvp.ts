@@ -20,6 +20,17 @@ const ACTIVE: RsvpStatus[] = [
   RsvpStatus.CONFIRMED,
 ];
 
+const PAYMENT_QR_STATUSES: RsvpStatus[] = [
+  RsvpStatus.PAYMENT_PENDING,
+  RsvpStatus.PAYMENT_SUBMITTED,
+  RsvpStatus.REJECTED,
+];
+
+const PAYMENT_SUBMIT_STATUSES: RsvpStatus[] = [
+  RsvpStatus.PAYMENT_PENDING,
+  RsvpStatus.REJECTED,
+];
+
 export async function getEventConfig(prisma: PrismaClient): Promise<EventConfig> {
   const config = await prisma.eventConfig.findUnique({ where: { id: 1 } });
   if (!config) {
@@ -51,6 +62,71 @@ export async function confirmedCount(prisma: PrismaClient) {
   });
 }
 
+const GOING_PENDING: RsvpStatus[] = [
+  RsvpStatus.WAITLISTED,
+  RsvpStatus.PAYMENT_PENDING,
+  RsvpStatus.PAYMENT_SUBMITTED,
+];
+
+export type GoingGuest = {
+  displayName: string;
+  image: string | null;
+};
+
+export type GoingList = {
+  confirmed: GoingGuest[];
+  pending: GoingGuest[];
+};
+
+function toGoingGuest(row: {
+  displayName: string | null;
+  user: { name: string; image: string | null };
+}): GoingGuest {
+  return {
+    displayName: (row.displayName?.trim() || row.user.name.trim()).slice(0, 80),
+    image: row.user.image?.trim() || null,
+  };
+}
+
+export async function listGoing(prisma: PrismaClient): Promise<GoingList> {
+  await expireOverdueSlots(prisma);
+
+  const [confirmedRows, pendingRows] = await Promise.all([
+    prisma.rsvp.findMany({
+      where: { status: RsvpStatus.CONFIRMED },
+      select: {
+        displayName: true,
+        confirmedAt: true,
+        user: { select: { name: true, image: true } },
+      },
+    }),
+    prisma.rsvp.findMany({
+      where: { status: { in: GOING_PENDING } },
+      select: {
+        displayName: true,
+        waitlistedAt: true,
+        user: { select: { name: true, image: true } },
+      },
+      orderBy: [{ waitlistedAt: "asc" }, { id: "asc" }],
+    }),
+  ]);
+
+  confirmedRows.sort((a, b) => {
+    const byTime = (b.confirmedAt?.getTime() ?? 0) - (a.confirmedAt?.getTime() ?? 0);
+    if (byTime !== 0) {
+      return byTime;
+    }
+    const an = a.displayName?.trim() || a.user.name;
+    const bn = b.displayName?.trim() || b.user.name;
+    return an.localeCompare(bn, undefined, { sensitivity: "base" });
+  });
+
+  return {
+    confirmed: confirmedRows.map(toGoingGuest),
+    pending: pendingRows.map(toGoingGuest),
+  };
+}
+
 function paymentWindowEnd(config: EventConfig) {
   return new Date(Date.now() + config.paymentWindowHours * 60 * 60 * 1000);
 }
@@ -60,6 +136,14 @@ export function canRejoin(status: RsvpStatus, config: EventConfig) {
     return true;
   }
   return status === RsvpStatus.REJECTED && config.allowRejoinAfterReject;
+}
+
+export function canSeePaymentQr(status: RsvpStatus) {
+  return PAYMENT_QR_STATUSES.includes(status);
+}
+
+export function canSubmitPayment(status: RsvpStatus) {
+  return PAYMENT_SUBMIT_STATUSES.includes(status);
 }
 
 export function assertCanJoin(existing: Rsvp | null, config: EventConfig) {
@@ -124,9 +208,7 @@ export async function serializeMe(
   config: EventConfig,
 ) {
   const latestPayment = rsvp?.payments[0] ?? null;
-  const showPay =
-    rsvp?.status === RsvpStatus.PAYMENT_PENDING ||
-    rsvp?.status === RsvpStatus.PAYMENT_SUBMITTED;
+  const showPay = rsvp ? canSeePaymentQr(rsvp.status) : false;
 
   return {
     user: {

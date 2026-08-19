@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 
 import { env } from "@the-right-party/env/server";
@@ -71,6 +72,58 @@ export function contentTypeFromPath(filePath: string) {
     return "image/svg+xml";
   }
   return "image/png";
+}
+
+export function contentTypeFromBytes(filePath: string, bytes: Uint8Array) {
+  const kind = sniffImage(bytes);
+  if (kind) {
+    return contentTypeFor(kind);
+  }
+  return contentTypeFromPath(filePath);
+}
+
+/**
+ * Resolve a stored payment-QR path whether cwd is the repo root or `apps/server`,
+ * and whether the path is absolute (admin upload) or repo-relative.
+ */
+export function paymentQrCandidates(storedPath: string): string[] {
+  if (path.isAbsolute(storedPath)) {
+    return [storedPath];
+  }
+
+  const here = import.meta.dir;
+  const serverRoot = path.resolve(here, "..");
+  const repoRoot = path.resolve(here, "../../..");
+  const fromServer = storedPath.replace(/^apps\/server\//, "");
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const candidate of [
+    path.resolve(storedPath),
+    path.resolve(here, storedPath),
+    path.resolve(serverRoot, storedPath),
+    path.resolve(repoRoot, storedPath),
+    path.resolve(serverRoot, fromServer),
+    path.resolve(here, fromServer),
+  ]) {
+    if (!seen.has(candidate)) {
+      seen.add(candidate);
+      out.push(candidate);
+    }
+  }
+  return out;
+}
+
+export async function resolvePaymentQrFile(storedPath: string): Promise<string | null> {
+  for (const candidate of paymentQrCandidates(storedPath)) {
+    try {
+      await access(candidate, fsConstants.R_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 export async function readUploadBytes(file: File) {

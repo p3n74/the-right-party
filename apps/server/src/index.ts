@@ -3,20 +3,30 @@ import path from "node:path";
 
 import { trpcServer } from "@hono/trpc-server";
 import { createContext } from "@the-right-party/api/context";
+import { canSeePaymentQr } from "@the-right-party/api/lib/rsvp";
 import { appRouter } from "@the-right-party/api/routers/index";
 import { auth } from "@the-right-party/auth";
-import prisma, { RsvpStatus, ensureEventConfig } from "@the-right-party/db";
+import prisma, { DEFAULT_GCASH_QR_PATH, ensureEventConfig } from "@the-right-party/db";
 import { env, isAdminEmail } from "@the-right-party/env/server";
 import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import QRCode from "qrcode";
 
-import { contentTypeFromPath, receiptAbsPath, savePaymentQr, saveReceipt } from "./files";
+import {
+  contentTypeFromBytes,
+  contentTypeFromPath,
+  receiptAbsPath,
+  resolvePaymentQrFile,
+  savePaymentQr,
+  saveReceipt,
+} from "./files";
 
 await ensureEventConfig(prisma);
 
 const app = new Hono();
+const frontendOrigin = env.CORS_ORIGIN.replace(/\/$/, "");
 
 app.use(logger());
 app.use(
@@ -28,6 +38,14 @@ app.use(
     credentials: true,
   }),
 );
+
+const serveSpa = env.NODE_ENV === "production";
+
+if (!serveSpa) {
+  for (const route of ["/rsvp", "/login", "/admin", "/dashboard", "/poster", "/poster-2", "/going"]) {
+    app.get(route, (c) => c.redirect(`${frontendOrigin}${route}`));
+  }
+}
 
 async function sessionFromRequest(request: Request) {
   return auth.api.getSession({ headers: request.headers });
@@ -97,29 +115,35 @@ app.get("/api/payment-qr/:kind", async (c) => {
   });
   const allowed =
     isAdminEmail(session.user.email) ||
-    rsvp?.status === RsvpStatus.PAYMENT_PENDING ||
-    rsvp?.status === RsvpStatus.PAYMENT_SUBMITTED;
+    (rsvp ? canSeePaymentQr(rsvp.status) : false);
   if (!allowed) {
     return c.json({ error: "Forbidden" }, 403);
   }
 
   const config = await prisma.eventConfig.findUnique({ where: { id: 1 } });
   const storedPath = kind === "gcash" ? config?.gcashQrPath : config?.mayaQrPath;
+  const fallbackPath = kind === "gcash" ? DEFAULT_GCASH_QR_PATH : null;
 
-  if (storedPath) {
+  for (const candidate of [storedPath, fallbackPath]) {
+    if (!candidate) {
+      continue;
+    }
+    const abs = await resolvePaymentQrFile(candidate);
+    if (!abs) {
+      continue;
+    }
     try {
-      const abs = path.isAbsolute(storedPath) ? storedPath : path.resolve(storedPath);
       const bytes = await readFile(abs);
       return c.body(bytes, 200, {
-        "Content-Type": contentTypeFromPath(abs),
+        "Content-Type": contentTypeFromBytes(abs, bytes),
         "Cache-Control": "private, max-age=30",
       });
     } catch {
-      // fall through to generated placeholder
+      // try the next candidate
     }
   }
 
-  const png = await QRCode.toBuffer("THE RIGHT PARTY - GCash QR coming soon", {
+  const png = await QRCode.toBuffer("ACQUAINTANCE AFTERPARTY - payment QR coming soon", {
     type: "png",
     width: 512,
     margin: 1,
@@ -171,8 +195,19 @@ app.use(
   }),
 );
 
-app.get("/", (c) => {
-  return c.text("OK");
-});
+if (serveSpa) {
+  const webDist = path.resolve(import.meta.dir, "../../web/dist");
+  app.use("/*", serveStatic({ root: webDist }));
+  app.get("*", async (c) => {
+    const html = await readFile(path.join(webDist, "index.html"), "utf8");
+    return c.html(html);
+  });
+} else {
+  app.get("/", (c) => c.text("OK"));
+}
 
-export default app;
+export default {
+  port: Number(process.env.PORT ?? 3000),
+  hostname: process.env.HOSTNAME ?? "0.0.0.0",
+  fetch: app.fetch,
+};
