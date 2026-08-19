@@ -8,7 +8,6 @@ import { protectedProcedure, router } from "../index";
 import {
   assertCanJoin,
   canSubmitPayment,
-  expireOverdueSlots,
   getEventConfig,
   listGoing,
   loadRsvp,
@@ -27,7 +26,6 @@ async function mePayload(
 
 export const rsvpRouter = router({
   me: protectedProcedure.query(async ({ ctx }) => {
-    await expireOverdueSlots(prisma);
     return mePayload(prisma, ctx.session.user);
   }),
 
@@ -46,7 +44,6 @@ export const rsvpRouter = router({
         .optional(),
     )
     .mutation(async ({ ctx, input }) => {
-      await expireOverdueSlots(prisma);
       const config = await getEventConfig(prisma);
       const existing = await prisma.rsvp.findUnique({
         where: { userId: ctx.session.user.id },
@@ -95,7 +92,6 @@ export const rsvpRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await expireOverdueSlots(prisma);
       const config = await getEventConfig(prisma);
       const rsvp = await prisma.rsvp.findUnique({
         where: { userId: ctx.session.user.id },
@@ -161,7 +157,6 @@ export const rsvpRouter = router({
     }),
 
   cancel: protectedProcedure.mutation(async ({ ctx }) => {
-    await expireOverdueSlots(prisma);
     const rsvp = await prisma.rsvp.findUnique({
       where: { userId: ctx.session.user.id },
     });

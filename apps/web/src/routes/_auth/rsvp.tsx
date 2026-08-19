@@ -169,7 +169,7 @@ function RsvpLcd({
     return (
       <div>
         <StatusChip status={status} />
-        <p className="mt-4 text-xl text-ink">That spot timed out.</p>
+        <p className="mt-4 text-xl text-ink">That spot isn&apos;t held anymore.</p>
         <PartyCta className="mt-5" mark disabled={joining} onClick={onJoin}>
           {joining ? "Loading_" : "Join the waitlist"}
         </PartyCta>
@@ -259,9 +259,6 @@ function PayTray({
       <p className="mt-2 text-center text-xs text-paper">{pay?.gcashNumber ?? "GoTyme / InstaPay"}</p>
       {pay?.usingPlaceholderQr ? (
         <p className="mt-2 text-xs text-paper/80">Stand-in QR. Don&apos;t send money until the real code is up.</p>
-      ) : null}
-      {pay?.expiresAt ? (
-        <p className="mt-2 text-center text-xs text-paper/80">Pay by {formatWhen(pay.expiresAt)}.</p>
       ) : null}
       <label className="ipod-drop">
         {file ? file.name : "Drop your receipt."}

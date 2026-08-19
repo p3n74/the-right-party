@@ -6,7 +6,6 @@ import { adminProcedure, router } from "../index";
 import {
   audit,
   confirmedCount,
-  expireOverdueSlots,
   getEventConfig,
 } from "../lib/rsvp";
 
@@ -29,7 +28,6 @@ export const adminRouter = router({
         .optional(),
     )
     .query(async ({ input }) => {
-      await expireOverdueSlots(prisma);
       const config = await getEventConfig(prisma);
       const confirmed = await confirmedCount(prisma);
       const status = input?.status;
@@ -168,7 +166,6 @@ export const adminRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const config = await getEventConfig(prisma);
       const rsvp = await prisma.rsvp.findUnique({
         where: { id: input.rsvpId },
       });
@@ -178,10 +175,6 @@ export const adminRouter = router({
           message: "This RSVP is not waiting on payment review",
         });
       }
-
-      const expiresAt = new Date(
-        Date.now() + config.paymentWindowHours * 60 * 60 * 1000,
-      );
 
       await prisma.$transaction([
         prisma.payment.update({
@@ -198,7 +191,7 @@ export const adminRouter = router({
           data: {
             status: RsvpStatus.PAYMENT_PENDING,
             paymentSubmittedAt: null,
-            expiresAt,
+            expiresAt: null,
           },
         }),
       ]);

@@ -2,11 +2,10 @@ import prisma from "@the-right-party/db";
 import { googleAuthConfigured } from "@the-right-party/env/server";
 
 import { publicProcedure, router } from "../index";
-import { confirmedCount, expireOverdueSlots, getEventConfig } from "../lib/rsvp";
+import { confirmedCount, getEventConfig } from "../lib/rsvp";
 
 export const eventRouter = router({
   getPublicConfig: publicProcedure.query(async () => {
-    await expireOverdueSlots(prisma);
     const config = await getEventConfig(prisma);
     const confirmed = await confirmedCount(prisma);
     const remainingSlots = Math.max(0, config.capacity - confirmed);

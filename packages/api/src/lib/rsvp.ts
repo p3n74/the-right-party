@@ -42,20 +42,6 @@ export async function getEventConfig(prisma: PrismaClient): Promise<EventConfig>
   return config;
 }
 
-export async function expireOverdueSlots(prisma: PrismaClient) {
-  await prisma.rsvp.updateMany({
-    where: {
-      status: RsvpStatus.PAYMENT_PENDING,
-      expiresAt: { lt: new Date() },
-    },
-    data: {
-      status: RsvpStatus.EXPIRED,
-      slotClaimedAt: null,
-      expiresAt: null,
-    },
-  });
-}
-
 export async function confirmedCount(prisma: PrismaClient) {
   return prisma.rsvp.count({
     where: { status: RsvpStatus.CONFIRMED },
@@ -89,8 +75,6 @@ function toGoingGuest(row: {
 }
 
 export async function listGoing(prisma: PrismaClient): Promise<GoingList> {
-  await expireOverdueSlots(prisma);
-
   const [confirmedRows, pendingRows] = await Promise.all([
     prisma.rsvp.findMany({
       where: { status: RsvpStatus.CONFIRMED },
@@ -125,10 +109,6 @@ export async function listGoing(prisma: PrismaClient): Promise<GoingList> {
     confirmed: confirmedRows.map(toGoingGuest),
     pending: pendingRows.map(toGoingGuest),
   };
-}
-
-function paymentWindowEnd(config: EventConfig) {
-  return new Date(Date.now() + config.paymentWindowHours * 60 * 60 * 1000);
 }
 
 export function canRejoin(status: RsvpStatus, config: EventConfig) {
@@ -175,7 +155,7 @@ export function nextJoinStatus(config: EventConfig): {
   if (config.paymentsOpen && config.ticketPriceCentavos > 0) {
     return {
       status: RsvpStatus.PAYMENT_PENDING,
-      expiresAt: paymentWindowEnd(config),
+      expiresAt: null,
       slotClaimedAt: new Date(),
     };
   }
@@ -250,7 +230,7 @@ export async function serializeMe(
           mayaQrUrl: config.mayaQrPath ? "/api/payment-qr/maya" : null,
           requireReceipt: config.requireReceipt,
           usingPlaceholderQr: !config.gcashQrPath,
-          expiresAt: rsvp?.expiresAt?.toISOString() ?? null,
+          expiresAt: null,
         }
       : null,
   };
