@@ -172,7 +172,7 @@ function QrUpload() {
       if (!response.ok) {
         throw new Error(payload.error ?? "Upload failed");
       }
-      toast.success("GCash QR saved");
+      toast.success("Payment QR saved");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed");
     } finally {
@@ -182,7 +182,7 @@ function QrUpload() {
 
   return (
     <label className="mt-6 block border border-dashed border-rule p-4 text-sm text-ink-2">
-      {busy ? "Uploading_" : "Upload the real GCash QR (PNG or JPEG)"}
+      {busy ? "Uploading_" : "Replace payment QR (PNG or JPEG)"}
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp"

@@ -1,6 +1,7 @@
 import { Button } from "@the-right-party/ui/components/button";
 
 import { authClient } from "@/lib/auth-client";
+import { frontendUrl } from "@/lib/api-url";
 
 type GoogleButtonProps = {
   callbackURL?: string;
@@ -11,8 +12,7 @@ export function GoogleButton({ callbackURL = "/rsvp", configured }: GoogleButton
   if (!configured) {
     return (
       <p className="text-sm leading-relaxed text-ink-2">
-        Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the
-        server env.
+        Google sign-in isn&apos;t live yet. Ping the host.
       </p>
     );
   }
@@ -20,12 +20,12 @@ export function GoogleButton({ callbackURL = "/rsvp", configured }: GoogleButton
   return (
     <Button
       type="button"
-      className="h-11 w-full gap-3 bg-white text-sm text-[#1f1f1f] hover:bg-white/90"
+      className="h-11 min-h-11 w-full gap-2 whitespace-nowrap bg-qr-paper text-sm font-semibold text-google-ink hover:opacity-90 sm:gap-3"
       onClick={() => {
         void authClient.signIn.social({
           provider: "google",
-          callbackURL,
-          errorCallbackURL: "/login",
+          callbackURL: frontendUrl(callbackURL),
+          errorCallbackURL: frontendUrl("/login"),
         });
       }}
     >

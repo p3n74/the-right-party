@@ -21,13 +21,13 @@ export function SprayYearLockup({ size = "hero", className }: SprayYearLockupPro
     <div
       role="img"
       aria-label="Stop living in the past"
-      className={cn("relative isolate overflow-visible", className)}
+      className={cn("relative isolate mx-auto w-fit max-w-full overflow-visible px-[0.35em]", className)}
     >
       <p
         className={cn(
-          "font-display relative z-20 w-fit max-w-full origin-left text-ink",
+          "font-display relative z-20 w-fit max-w-full origin-center text-ink md:origin-left",
           hero
-            ? "mb-2 rotate-[-9deg] text-[clamp(1.2rem,5vw,2.2rem)] leading-[0.85]"
+            ? "mb-2 rotate-[-6deg] text-[clamp(1.2rem,5vw,2.2rem)] leading-[0.85] md:rotate-[-9deg]"
             : "mb-1 rotate-[-6deg] text-lg leading-[0.95]",
         )}
       >
@@ -43,10 +43,10 @@ export function SprayYearLockup({ size = "hero", className }: SprayYearLockupPro
       </p>
       <div
         className={cn(
-          "relative z-0 font-year text-ink",
+          "relative z-0 mx-auto w-fit min-w-0 font-year text-ink",
           hero
-            ? "w-fit min-w-0 text-[clamp(3.6rem,22vw,9.5rem)] leading-[1.02]"
-            : "w-fit min-w-0 text-5xl leading-none",
+            ? "text-[clamp(3.6rem,22vw,9.5rem)] leading-[1.02]"
+            : "text-5xl leading-none",
         )}
       >
         <div
@@ -65,8 +65,10 @@ export function SprayYearLockup({ size = "hero", className }: SprayYearLockupPro
           alt=""
           aria-hidden
           className={cn(
-            "pointer-events-none absolute top-1/2 left-1/2 z-[2] max-w-none -translate-x-1/2 -translate-y-[46%]",
-            hero ? "w-[155%]" : "w-[150%]",
+            "pointer-events-none absolute top-1/2 left-1/2 z-[2] -translate-x-1/2 -translate-y-[46%]",
+            hero
+              ? "w-[118%] max-w-[calc(100vw-2.5rem)] md:w-[155%] md:max-w-none"
+              : "w-[130%] max-w-[calc(100vw-2.5rem)] md:w-[150%] md:max-w-none",
           )}
         />
       </div>

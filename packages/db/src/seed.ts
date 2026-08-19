@@ -7,5 +7,7 @@ console.log("Local database is ready.");
 console.log(`  event: ${config?.name}`);
 console.log(`  venue: ${config?.venue}`);
 console.log(`  price: ₱${(config?.ticketPriceCentavos ?? 0) / 100}`);
+console.log(`  pay to: ${config?.gcashName ?? "unset"}`);
+console.log(`  qr: ${config?.gcashQrPath ?? "unset"}`);
 
 await prisma.$disconnect();

@@ -12,31 +12,35 @@ export default function Header() {
     enabled: Boolean(session),
   });
 
-  if (pathname === "/poster") {
+  if (pathname === "/poster" || pathname === "/poster-2") {
     return null;
   }
 
   return (
-    <header className="relative z-20 flex h-16 items-center justify-between px-4 md:px-8">
-      <Link to="/" className="font-display text-xl text-magenta md:text-2xl">
-        The Right Party
+    <header className="site-header">
+      <Link to="/" className="site-header-mark" aria-label="Acquaintance Afterparty">
+        <span className="site-header-mark-short">Afterparty</span>
+        <span className="site-header-mark-full">Acquaintance Afterparty</span>
       </Link>
-      <nav className="flex items-center gap-4 text-sm">
+      <nav className="site-header-nav">
         {me.data?.isAdmin ? (
-          <Link to="/admin" className="text-ink-2 hover:text-ink">
+          <Link to="/admin" className="site-header-link site-header-admin">
             Admin
           </Link>
         ) : null}
+        <Link to="/going" className="site-header-link">
+          Who&apos;s going
+        </Link>
         {isPending ? (
-          <span className="text-ink-2">Loading_</span>
+          <span className="font-pixel text-[11px] tracking-widest text-ink-2">Loading_</span>
         ) : session ? (
-          <div className="flex items-center gap-3">
-            <Link to="/rsvp" className="text-ink hover:text-magenta">
+          <>
+            <Link to="/rsvp" className="site-header-link">
               Your ticket
             </Link>
             <button
               type="button"
-              className="text-ink-2 hover:text-ink"
+              className="site-header-link site-header-signout"
               onClick={() => {
                 void authClient.signOut({
                   fetchOptions: { onSuccess: () => window.location.assign("/") },
@@ -45,9 +49,9 @@ export default function Header() {
             >
               Sign out
             </button>
-          </div>
+          </>
         ) : (
-          <Link to="/rsvp" className="bg-magenta-action px-3 py-2 text-on-magenta">
+          <Link to="/rsvp" className="site-header-waitlist">
             Join the waitlist
           </Link>
         )}

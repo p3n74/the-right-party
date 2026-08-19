@@ -9,7 +9,7 @@ export function createAuth() {
   const production = env.NODE_ENV === "production";
 
   return betterAuth({
-    appName: "The Right Party",
+    appName: "Acquaintance Afterparty",
     database: prismaAdapter(prisma, {
       provider: "postgresql",
     }),

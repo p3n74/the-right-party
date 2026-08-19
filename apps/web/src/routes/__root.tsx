@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { HeadContent, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import { HeadContent, Outlet, createRootRouteWithContext, useRouterState } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "@the-right-party/ui/components/sonner";
 
@@ -21,23 +21,25 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: "The Right Party",
+        title: "Acquaintance Afterparty",
       },
       {
         name: "description",
-        content: "Afterparty of the DCISM Acquaintance Party. Tagu Cafe and Bar. 11 PM.",
+        content: "Afterparty of the DCISM Acquaintance Party. Tagu Cafe and Bar. 11 PM. ₱1,000.",
       },
     ],
     links: [
-      {
-        rel: "icon",
-        href: "/favicon.ico",
-      },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", type: "image/png", href: "/favicon-32.png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
 });
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isPoster = pathname === "/poster" || pathname === "/poster-2";
+
   return (
     <>
       <HeadContent />
@@ -50,15 +52,15 @@ function RootComponent() {
       >
         <GrainOverlay />
         <div className="relative grid min-h-[100dvh]">
-          <div className="absolute inset-x-0 top-0 z-20">
+          <div className="absolute inset-x-0 top-0 z-20 max-w-full overflow-x-clip">
             <Header />
           </div>
           <Outlet />
         </div>
-        <Toaster />
+        {isPoster ? null : <Toaster />}
       </ThemeProvider>
-      <TanStackRouterDevtools position="bottom-left" />
-      <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
+      {isPoster ? null : <TanStackRouterDevtools position="bottom-left" />}
+      {isPoster ? null : <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />}
     </>
   );
 }

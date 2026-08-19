@@ -44,44 +44,38 @@ function HomeComponent() {
 
   return (
     <NightField>
-      <main className="mx-auto grid min-h-[100dvh] max-w-6xl items-center gap-12 px-4 pt-24 pb-20 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] md:gap-16 md:px-8 md:pt-28 md:pb-28">
+      <main className="hero-stage">
         <section className="min-w-0">
-          <div className="w-fit max-w-full">
+          <div className="mx-auto flex w-fit max-w-full flex-col items-center">
             <SprayYearLockup />
-            <p className="font-display relative z-20 mt-4 w-full min-w-0 origin-center rotate-[-9deg] text-center text-[clamp(1.05rem,4.6vw,1.85rem)] leading-none text-ink md:mt-5">
+            <p className="font-display relative z-20 mt-4 w-full min-w-0 origin-center rotate-[-6deg] text-center text-[clamp(1.05rem,4.6vw,1.85rem)] leading-none text-ink md:mt-5 md:rotate-[-9deg]">
               <span className="block">its time for you to</span>
               <span className="mt-[0.12em] block">Move On</span>
             </p>
           </div>
-          <dl className="mt-12 grid max-w-sm gap-6">
-            <div className="min-w-0">
-              <dt className="font-pixel text-[10px] tracking-[0.2em] text-ink-2">Where</dt>
-              <dd className="mt-1 font-year text-2xl leading-[0.95] tracking-wide text-ink md:text-3xl">
-                {config.data?.venue ?? "Tagu Cafe and Bar"}
-              </dd>
+          <dl className="hero-facts">
+            <div>
+              <dt>Where</dt>
+              <dd>{config.data?.venue ?? "Tagu Cafe and Bar"}</dd>
             </div>
-            <div className="min-w-0">
-              <dt className="font-pixel text-[10px] tracking-[0.2em] text-ink-2">When</dt>
-              <dd className="mt-1 font-year text-2xl leading-[0.95] tracking-wide text-ink md:text-3xl">
-                {formatWhen(config.data?.startsAt)}
-              </dd>
+            <div>
+              <dt>When</dt>
+              <dd>{formatWhen(config.data?.startsAt)}</dd>
             </div>
-            <div className="min-w-0">
-              <dt className="font-pixel text-[10px] tracking-[0.2em] text-ink-2">In</dt>
-              <dd className="mt-1 font-year text-2xl leading-[0.95] tracking-wide text-ink md:text-3xl">
-                {formatPhp(config.data?.ticketPriceCentavos ?? 100000)}
-              </dd>
+            <div>
+              <dt>In</dt>
+              <dd>{formatPhp(config.data?.ticketPriceCentavos ?? 100000)}</dd>
             </div>
           </dl>
         </section>
 
         <IpodTicket lcdKey={alreadyIn ? "ticket" : session ? "join" : "google"}>
-          <p className="text-xl leading-tight text-ink">
+          <p className="text-base leading-snug text-ink md:text-xl md:leading-tight">
             {alreadyIn
               ? "Click here to view your ticket."
               : "Click here to register and pay."}
           </p>
-          <div className="mt-6">
+          <div className="mt-4 md:mt-6">
             {session ? (
               alreadyIn ? (
                 <PartyCta mark onClick={() => void navigate({ to: "/rsvp" })}>

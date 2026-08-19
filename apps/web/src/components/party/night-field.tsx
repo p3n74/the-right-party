@@ -1,5 +1,8 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@the-right-party/ui/lib/utils";
+
+import nightBg1 from "@/assets/bg1.jpg";
+import nightBg2 from "@/assets/bg2.jpg";
 
 type NightFieldProps = {
   density?: "loud" | "quiet";
@@ -11,23 +14,32 @@ export function NightField({ density = "loud", className, children }: NightField
   const loud = density === "loud";
 
   return (
-    <div className={cn("relative isolate min-h-[100dvh] overflow-hidden bg-paper text-ink", className)}>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_20%_0%,oklch(0.28_0.12_330/_0.55),transparent_58%),radial-gradient(70%_50%_at_90%_10%,oklch(0.45_0.18_350/_0.28),transparent_50%)]" />
-      <Palm className={cn("pointer-events-none absolute -top-8 -left-10 w-[42vw] max-w-md text-paper", loud ? "opacity-90" : "opacity-40")} />
-      <Palm className={cn("pointer-events-none absolute -top-16 -right-16 w-[58vw] max-w-xl rotate-12 text-paper", loud ? "opacity-100" : "opacity-50")} />
-      <div
+    <div
+      className={cn("night-field", className)}
+      style={{ "--night-photo": `url(${loud ? nightBg1 : nightBg2})` } as CSSProperties}
+    >
+      <div className={cn("night-photo", loud ? "night-photo--loud" : "night-photo--quiet")} aria-hidden />
+      <div className="night-bloom" />
+      <Palm
         className={cn(
-          "flare-drift pointer-events-none absolute top-0 left-[12%] h-40 w-[55%] bg-[linear-gradient(110deg,transparent,oklch(0.82_0.14_205/_0.18),transparent)]",
-          !loud && "opacity-40",
+          "pointer-events-none absolute -top-8 -left-10 w-[42vw] max-w-md text-paper",
+          loud ? "opacity-90" : "opacity-40",
         )}
       />
-      <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:repeating-radial-gradient(circle_at_20%_10%,oklch(0.96_0.012_280/_0.16)_0_1px,transparent_1px_7px)]" />
+      <Palm
+        className={cn(
+          "pointer-events-none absolute -top-16 -right-16 w-[58vw] max-w-xl rotate-12 text-paper",
+          loud ? "opacity-100" : "opacity-50",
+        )}
+      />
+      <div className={cn("night-flare flare-drift", !loud && "opacity-40")} />
+      <div className="night-halftone" />
       <div className="relative z-10">{children}</div>
     </div>
   );
 }
 
-function Palm({ className }: { className?: string }) {
+export function Palm({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 240 280" className={className} aria-hidden>
       <path

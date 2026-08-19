@@ -7,8 +7,10 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import {
   assertCanJoin,
+  canSubmitPayment,
   expireOverdueSlots,
   getEventConfig,
+  listGoing,
   loadRsvp,
   nextJoinStatus,
   serializeMe,
@@ -27,6 +29,10 @@ export const rsvpRouter = router({
   me: protectedProcedure.query(async ({ ctx }) => {
     await expireOverdueSlots(prisma);
     return mePayload(prisma, ctx.session.user);
+  }),
+
+  going: protectedProcedure.query(async () => {
+    return listGoing(prisma);
   }),
 
   joinWaitlist: protectedProcedure
@@ -95,14 +101,16 @@ export const rsvpRouter = router({
         where: { userId: ctx.session.user.id },
       });
 
-      if (!rsvp || rsvp.status !== RsvpStatus.PAYMENT_PENDING) {
+      if (!rsvp || !canSubmitPayment(rsvp.status)) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "Payment is not open for this RSVP",
         });
       }
 
-      if (config.requireReceipt && !input.receiptKey) {
+      const needsReceipt =
+        config.requireReceipt || rsvp.status === RsvpStatus.REJECTED;
+      if (needsReceipt && !input.receiptKey) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "A receipt photo is required",
@@ -142,6 +150,9 @@ export const rsvpRouter = router({
           data: {
             status: RsvpStatus.PAYMENT_SUBMITTED,
             paymentSubmittedAt: new Date(),
+            rejectReason: null,
+            rejectedAt: null,
+            confirmedAt: null,
           },
         }),
       ]);

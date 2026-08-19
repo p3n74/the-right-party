@@ -43,3 +43,15 @@ export function formatDate(iso: string | null | undefined) {
     day: "numeric",
   }).format(new Date(iso));
 }
+
+export function formatWeekdayDate(iso: string | null | undefined) {
+  if (!iso) {
+    return "TBA";
+  }
+  return new Intl.DateTimeFormat("en-PH", {
+    timeZone: MANILA,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(iso));
+}

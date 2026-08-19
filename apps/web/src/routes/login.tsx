@@ -23,11 +23,12 @@ function LoginPage() {
 
   return (
     <NightField density="quiet">
-      <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-10 pt-24">
-        <SprayYearLockup size="compact" className="mb-8" />
-        <IpodTicket>
+      <div className="mx-auto flex min-h-[100dvh] max-w-xl flex-col items-center justify-center px-4 py-16 pt-24">
+        <SprayYearLockup size="compact" className="mb-10" />
+        <IpodTicket lcdKey="login">
           <p className="font-pixel text-[11px] tracking-widest text-magenta">LOCKED</p>
-          <p className="mt-3 text-xl text-ink">Sign in to get on the list.</p>
+          <p className="mt-3 text-xl text-ink">Google only. That&apos;s how we know it&apos;s you.</p>
+          <p className="mt-3 text-sm text-ink-2">Then you&apos;re on the list.</p>
           <div className="mt-6">
             <GoogleButton configured={config.data?.googleAuthConfigured ?? false} />
           </div>
