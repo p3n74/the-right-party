@@ -36,6 +36,15 @@ function AdminPage() {
       onError: (error) => toast.error(error.message),
     }),
   );
+  const confirmManually = useMutation(
+    trpc.admin.confirmManually.mutationOptions({
+      onSuccess: () => {
+        void queryClient.invalidateQueries();
+        toast.success("Confirmed");
+      },
+      onError: (error) => toast.error(error.message),
+    }),
+  );
   const rejectPayment = useMutation(
     trpc.admin.rejectPayment.mutationOptions({
       onSuccess: () => {
@@ -129,20 +138,39 @@ function AdminPage() {
                     {row.status} · {row.user.email}
                   </p>
                 </div>
-                {row.status !== "REJECTED" && row.status !== "CANCELLED" ? (
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      const reason = window.prompt("Reject reason?");
-                      if (!reason) {
-                        return;
-                      }
-                      rejectRsvp.mutate({ rsvpId: row.id, reason });
-                    }}
-                  >
-                    Reject
-                  </Button>
-                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  {row.status !== "CONFIRMED" ? (
+                    <Button
+                      disabled={confirmManually.isPending}
+                      onClick={() => {
+                        const note = window.prompt("How did they pay? (cash, transfer, leave blank)");
+                        if (note === null) {
+                          return;
+                        }
+                        confirmManually.mutate({
+                          rsvpId: row.id,
+                          note: note.trim() || undefined,
+                        });
+                      }}
+                    >
+                      Confirm
+                    </Button>
+                  ) : null}
+                  {row.status !== "REJECTED" && row.status !== "CANCELLED" && row.status !== "CONFIRMED" ? (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        const reason = window.prompt("Reject reason?");
+                        if (!reason) {
+                          return;
+                        }
+                        rejectRsvp.mutate({ rsvpId: row.id, reason });
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

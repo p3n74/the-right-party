@@ -157,6 +157,86 @@ export const adminRouter = router({
       return { ok: true as const };
     }),
 
+  confirmManually: adminProcedure
+    .input(
+      z.object({
+        rsvpId: z.string().min(1),
+        note: z.string().trim().max(280).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const config = await getEventConfig(prisma);
+      const confirmed = await confirmedCount(prisma);
+      if (confirmed >= config.capacity) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Capacity is full. Raise the cap or cancel a confirmed guest first.",
+        });
+      }
+
+      const rsvp = await prisma.rsvp.findUnique({
+        where: { id: input.rsvpId },
+        include: { payments: true },
+      });
+      if (!rsvp) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "RSVP not found" });
+      }
+      if (rsvp.status === RsvpStatus.CONFIRMED) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Already confirmed",
+        });
+      }
+
+      const pendingIds = rsvp.payments
+        .filter((row) => row.review === PaymentReview.PENDING)
+        .map((row) => row.id);
+      const note = input.note?.trim() || "Confirmed off-channel";
+
+      await prisma.$transaction([
+        ...pendingIds.map((id) =>
+          prisma.payment.update({
+            where: { id },
+            data: {
+              review: PaymentReview.ACCEPTED,
+              reviewedAt: new Date(),
+              reviewedByEmail: ctx.session.user.email,
+              reviewNote: note,
+            },
+          }),
+        ),
+        prisma.payment.create({
+          data: {
+            rsvpId: rsvp.id,
+            method: "OTHER",
+            amountCentavos: config.ticketPriceCentavos,
+            referenceNote: note,
+            review: PaymentReview.ACCEPTED,
+            reviewedAt: new Date(),
+            reviewedByEmail: ctx.session.user.email,
+            reviewNote: note,
+          },
+        }),
+        prisma.rsvp.update({
+          where: { id: rsvp.id },
+          data: {
+            status: RsvpStatus.CONFIRMED,
+            confirmedAt: new Date(),
+            expiresAt: null,
+            rejectedAt: null,
+            rejectReason: null,
+            cancelledAt: null,
+          },
+        }),
+      ]);
+
+      await audit(prisma, ctx.session.user.email, "confirmManually", rsvp.id, {
+        note,
+        previousStatus: rsvp.status,
+      });
+      return { ok: true as const };
+    }),
+
   rejectPayment: adminProcedure
     .input(
       z.object({
