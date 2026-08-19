@@ -104,7 +104,7 @@ function RsvpLcd({
         <p className="font-pixel text-[11px] tracking-widest text-magenta">AFTERPARTY</p>
         <p className="mt-3 text-xl text-ink">Get on the list.</p>
         <p className="mt-2 text-sm text-ink-2">
-          {venue}. {time}. ₱1,000.
+          {venue}. VIP DJ booth table (the Good Seats). {time}. ₱1,000.
         </p>
         <PartyCta className="mt-5" mark disabled={joining} onClick={onJoin}>
           {joining ? "Loading_" : "Join the waitlist"}
@@ -158,6 +158,8 @@ function RsvpLcd({
         <p className="mt-4 text-sm text-ink">Hold this up at the door.</p>
         <p className="mt-2 text-xs text-ink-2">
           {venue}
+          <br />
+          VIP DJ booth table (the Good Seats)
           <br />
           {when}
         </p>

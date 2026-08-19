@@ -59,6 +59,13 @@ function HomeComponent() {
               <dd>{config.data?.venue ?? "Tagu Cafe and Bar"}</dd>
             </div>
             <div>
+              <dt>Table</dt>
+              <dd>
+                VIP DJ booth
+                <span className="mt-1 block text-[0.7em] tracking-normal">(the Good Seats)</span>
+              </dd>
+            </div>
+            <div>
               <dt>When</dt>
               <dd>{formatWhen(config.data?.startsAt)}</dd>
             </div>
@@ -99,15 +106,16 @@ function HomeComponent() {
         <dl className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 divide-y divide-on-magenta/25 md:grid-cols-3 md:divide-x md:divide-y-0">
           <div className="px-4 py-6 md:px-8 md:py-8">
             <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Where</dt>
-            <dd className="mt-3 font-year text-2xl leading-[0.95] tracking-wide md:text-3xl">
+            <dd className="mt-3">
               <a
                 href={VENUE_MAPS}
                 target="_blank"
                 rel="noopener"
-                className="underline decoration-2 underline-offset-4 focus-visible:outline-on-magenta"
+                className="font-year text-2xl leading-[0.95] tracking-wide underline decoration-2 underline-offset-4 focus-visible:outline-on-magenta md:text-3xl"
               >
                 {config.data?.venue ?? "Tagu Cafe and Bar"}
               </a>
+              <p className="mt-2 text-sm">VIP DJ booth table (the Good Seats)</p>
             </dd>
           </div>
           <div className="px-4 py-6 md:px-8 md:py-8">

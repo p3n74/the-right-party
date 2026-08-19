@@ -25,7 +25,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         name: "description",
-        content: "Afterparty of the DCISM Acquaintance Party. Tagu Cafe and Bar. 11 PM. ₱1,000.",
+        content: "Afterparty of the DCISM Acquaintance Party. Tagu Cafe and Bar, VIP DJ booth table (the Good Seats). 11 PM. ₱1,000.",
       },
     ],
     links: [
