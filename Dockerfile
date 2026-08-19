@@ -73,7 +73,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV RECEIPT_STORAGE_DIR=/app/var/receipts
 
-RUN addgroup -S nodejs && adduser -S -u 1000 app -G nodejs \
+RUN addgroup -S nodejs && adduser -S app -G nodejs \
   && mkdir -p /app/var/receipts /app/var/payment
 
 # Bring the entire built repo over. This is intentionally not minimal: it
