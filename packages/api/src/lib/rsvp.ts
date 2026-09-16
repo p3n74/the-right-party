@@ -13,7 +13,7 @@ const REJOINABLE: RsvpStatus[] = [
   RsvpStatus.CANCELLED,
 ];
 
-const ACTIVE: RsvpStatus[] = [
+export const ACTIVE: RsvpStatus[] = [
   RsvpStatus.WAITLISTED,
   RsvpStatus.PAYMENT_PENDING,
   RsvpStatus.PAYMENT_SUBMITTED,

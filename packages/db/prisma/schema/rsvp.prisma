@@ -33,7 +33,7 @@ model EventConfig {
   mainEventStartsAt      DateTime?
   mainEventEndsAt        DateTime?
   mainEventDresscode     String   @default("Wrong Party")
-  capacity               Int      @default(80)
+  capacity               Int      @default(15)
   ticketPriceCentavos    Int      @default(80000)
   currency               String   @default("PHP")
   paymentWindowHours     Int      @default(48)

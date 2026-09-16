@@ -1,13 +1,55 @@
+import { existsSync } from "node:fs";
+import { unlink } from "node:fs/promises";
+
 import prisma, { PaymentReview, RsvpStatus } from "@the-right-party/db";
+import { env } from "@the-right-party/env/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { adminProcedure, router } from "../index";
 import {
+  ACTIVE,
   audit,
   confirmedCount,
   getEventConfig,
+  nextJoinStatus,
 } from "../lib/rsvp";
+
+function createAuthStyleId(length = 32) {
+  const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+function nameFromEmail(email: string) {
+  const local = email.split("@")[0]?.trim() || "Guest";
+  return local.replace(/[._+-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 80);
+}
+
+function assertReceiptForUser(receiptKey: string, userId: string) {
+  const prefix = `${userId}/`;
+  if (!receiptKey.startsWith(prefix) || receiptKey.includes("..") || pathIsAbsolute(receiptKey)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Invalid receipt",
+    });
+  }
+  const filePath = `${env.RECEIPT_STORAGE_DIR}/${receiptKey}`;
+  if (!existsSync(filePath)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Receipt was not found. Upload it again.",
+    });
+  }
+}
+
+function pathIsAbsolute(value: string) {
+  return value.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(value);
+}
 
 export const adminRouter = router({
   listRsvps: adminProcedure
@@ -47,7 +89,7 @@ export const adminRouter = router({
             : {}),
         },
         include: {
-          user: { select: { email: true, name: true, image: true } },
+          user: { select: { id: true, email: true, name: true, image: true } },
           payments: { orderBy: { createdAt: "desc" }, take: 1 },
         },
         orderBy: [{ status: "asc" }, { waitlistedAt: "asc" }],
@@ -162,6 +204,7 @@ export const adminRouter = router({
       z.object({
         rsvpId: z.string().min(1),
         note: z.string().trim().max(280).optional(),
+        receiptKey: z.string().min(1).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -188,6 +231,10 @@ export const adminRouter = router({
         });
       }
 
+      if (input.receiptKey) {
+        assertReceiptForUser(input.receiptKey, rsvp.userId);
+      }
+
       const pendingIds = rsvp.payments
         .filter((row) => row.review === PaymentReview.PENDING)
         .map((row) => row.id);
@@ -211,6 +258,7 @@ export const adminRouter = router({
             method: "OTHER",
             amountCentavos: config.ticketPriceCentavos,
             referenceNote: note,
+            receiptKey: input.receiptKey,
             review: PaymentReview.ACCEPTED,
             reviewedAt: new Date(),
             reviewedByEmail: ctx.session.user.email,
@@ -232,6 +280,175 @@ export const adminRouter = router({
 
       await audit(prisma, ctx.session.user.email, "confirmManually", rsvp.id, {
         note,
+        previousStatus: rsvp.status,
+        receiptKey: input.receiptKey ?? null,
+      });
+      return { ok: true as const };
+    }),
+
+  attachPaymentProof: adminProcedure
+    .input(
+      z.object({
+        rsvpId: z.string().min(1),
+        receiptKey: z.string().min(1),
+        note: z.string().trim().max(280).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const config = await getEventConfig(prisma);
+      const rsvp = await prisma.rsvp.findUnique({
+        where: { id: input.rsvpId },
+        include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } },
+      });
+      if (!rsvp) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "RSVP not found" });
+      }
+      if (rsvp.status !== RsvpStatus.CONFIRMED) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Only confirmed guests can get proof attached this way",
+        });
+      }
+
+      assertReceiptForUser(input.receiptKey, rsvp.userId);
+      const note = input.note?.trim() || "Proof attached by admin";
+      const latest = rsvp.payments[0];
+
+      if (latest && !latest.receiptKey) {
+        await prisma.payment.update({
+          where: { id: latest.id },
+          data: {
+            receiptKey: input.receiptKey,
+            reviewNote: note,
+            reviewedAt: new Date(),
+            reviewedByEmail: ctx.session.user.email,
+          },
+        });
+        await audit(prisma, ctx.session.user.email, "attachPaymentProof", rsvp.id, {
+          paymentId: latest.id,
+          receiptKey: input.receiptKey,
+        });
+        return { ok: true as const, paymentId: latest.id };
+      }
+
+      const payment = await prisma.payment.create({
+        data: {
+          rsvpId: rsvp.id,
+          method: "OTHER",
+          amountCentavos: config.ticketPriceCentavos,
+          referenceNote: note,
+          receiptKey: input.receiptKey,
+          review: PaymentReview.ACCEPTED,
+          reviewedAt: new Date(),
+          reviewedByEmail: ctx.session.user.email,
+          reviewNote: note,
+        },
+      });
+
+      await audit(prisma, ctx.session.user.email, "attachPaymentProof", rsvp.id, {
+        paymentId: payment.id,
+        receiptKey: input.receiptKey,
+      });
+      return { ok: true as const, paymentId: payment.id };
+    }),
+
+  clearPaymentProof: adminProcedure
+    .input(
+      z.object({
+        rsvpId: z.string().min(1),
+        note: z.string().trim().max(280).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const rsvp = await prisma.rsvp.findUnique({
+        where: { id: input.rsvpId },
+        include: {
+          payments: {
+            where: { receiptKey: { not: null } },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      });
+      if (!rsvp) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "RSVP not found" });
+      }
+      if (rsvp.status !== RsvpStatus.CONFIRMED) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Only confirmed guests can have proof cleared this way",
+        });
+      }
+      if (rsvp.payments.length === 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No proof on file for this guest",
+        });
+      }
+
+      const note = input.note?.trim() || "Placeholder proof cleared — pay later";
+      const clearedKeys = rsvp.payments
+        .map((payment) => payment.receiptKey)
+        .filter((key): key is string => Boolean(key));
+
+      await prisma.$transaction(
+        rsvp.payments.map((payment) =>
+          prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              receiptKey: null,
+              reviewNote: note,
+              reviewedAt: new Date(),
+              reviewedByEmail: ctx.session.user.email,
+            },
+          }),
+        ),
+      );
+
+      for (const key of clearedKeys) {
+        try {
+          const abs = `${env.RECEIPT_STORAGE_DIR}/${key}`;
+          if (existsSync(abs)) {
+            await unlink(abs);
+          }
+        } catch {
+          // Keep going — DB already cleared; missing files are fine.
+        }
+      }
+
+      await audit(prisma, ctx.session.user.email, "clearPaymentProof", rsvp.id, {
+        paymentIds: rsvp.payments.map((payment) => payment.id),
+        clearedKeys,
+        note,
+        statusUnchanged: RsvpStatus.CONFIRMED,
+      });
+      return { ok: true as const, cleared: clearedKeys.length };
+    }),
+
+  unconfirm: adminProcedure
+    .input(z.object({ rsvpId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const rsvp = await prisma.rsvp.findUnique({ where: { id: input.rsvpId } });
+      if (!rsvp) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "RSVP not found" });
+      }
+      if (rsvp.status !== RsvpStatus.CONFIRMED) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Only confirmed guests can be moved back to payment",
+        });
+      }
+
+      await prisma.rsvp.update({
+        where: { id: rsvp.id },
+        data: {
+          status: RsvpStatus.PAYMENT_PENDING,
+          confirmedAt: null,
+          paymentSubmittedAt: null,
+          expiresAt: null,
+        },
+      });
+
+      await audit(prisma, ctx.session.user.email, "unconfirm", rsvp.id, {
         previousStatus: rsvp.status,
       });
       return { ok: true as const };
@@ -331,5 +548,150 @@ export const adminRouter = router({
         capacity: input.capacity,
       });
       return { ok: true as const, capacity: input.capacity };
+    }),
+
+  addGuestsByEmail: adminProcedure
+    .input(
+      z.object({
+        emails: z.array(z.string().trim().email().max(160)).min(1).max(40),
+        displayName: z.string().trim().min(1).max(80).optional(),
+        confirmNow: z.boolean().default(false),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const config = await getEventConfig(prisma);
+      const uniqueEmails = [
+        ...new Set(input.emails.map(normalizeEmail).filter(Boolean)),
+      ];
+      if (uniqueEmails.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Add at least one email",
+        });
+      }
+
+      const added: string[] = [];
+      const skipped: { email: string; reason: string }[] = [];
+      const join = nextJoinStatus(config);
+      let confirmed = await confirmedCount(prisma);
+
+      for (const email of uniqueEmails) {
+        let user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+          const now = new Date();
+          user = await prisma.user.create({
+            data: {
+              id: createAuthStyleId(),
+              email,
+              name:
+                uniqueEmails.length === 1 && input.displayName
+                  ? input.displayName
+                  : nameFromEmail(email),
+              emailVerified: false,
+              createdAt: now,
+              updatedAt: now,
+            },
+          });
+        }
+
+        const existing = await prisma.rsvp.findUnique({
+          where: { userId: user.id },
+        });
+        if (existing && ACTIVE.includes(existing.status)) {
+          skipped.push({
+            email,
+            reason: `Already ${existing.status.toLowerCase().replace(/_/g, " ")}`,
+          });
+          continue;
+        }
+
+        const displayName =
+          uniqueEmails.length === 1 && input.displayName
+            ? input.displayName
+            : existing?.displayName || user.name || nameFromEmail(email);
+
+        if (input.confirmNow) {
+          if (confirmed >= config.capacity) {
+            skipped.push({ email, reason: "Capacity is full" });
+            continue;
+          }
+          const note = "Added by admin";
+          await prisma.$transaction(async (tx) => {
+            const rsvp = await tx.rsvp.upsert({
+              where: { userId: user.id },
+              create: {
+                userId: user.id,
+                status: RsvpStatus.CONFIRMED,
+                displayName,
+                confirmedAt: new Date(),
+                slotClaimedAt: new Date(),
+                expiresAt: null,
+              },
+              update: {
+                status: RsvpStatus.CONFIRMED,
+                displayName,
+                confirmedAt: new Date(),
+                paymentSubmittedAt: null,
+                cancelledAt: null,
+                rejectedAt: null,
+                rejectReason: null,
+                expiresAt: null,
+                slotClaimedAt: new Date(),
+                waitlistedAt: new Date(),
+              },
+            });
+            await tx.payment.create({
+              data: {
+                rsvpId: rsvp.id,
+                method: "OTHER",
+                amountCentavos: config.ticketPriceCentavos,
+                referenceNote: note,
+                review: PaymentReview.ACCEPTED,
+                reviewedAt: new Date(),
+                reviewedByEmail: ctx.session.user.email,
+                reviewNote: note,
+              },
+            });
+          });
+          confirmed += 1;
+        } else {
+          await prisma.rsvp.upsert({
+            where: { userId: user.id },
+            create: {
+              userId: user.id,
+              status: join.status,
+              displayName,
+              expiresAt: join.expiresAt,
+              slotClaimedAt: join.slotClaimedAt,
+            },
+            update: {
+              status: join.status,
+              displayName,
+              expiresAt: join.expiresAt,
+              slotClaimedAt: join.slotClaimedAt,
+              paymentSubmittedAt: null,
+              confirmedAt: null,
+              cancelledAt: null,
+              rejectedAt: null,
+              rejectReason: null,
+              waitlistedAt: new Date(),
+            },
+          });
+        }
+
+        added.push(email);
+      }
+
+      await audit(prisma, ctx.session.user.email, "addGuestsByEmail", undefined, {
+        added,
+        skipped,
+        confirmNow: input.confirmNow,
+      });
+
+      return {
+        ok: true as const,
+        added,
+        skipped,
+      };
     }),
 });

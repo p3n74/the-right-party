@@ -73,9 +73,17 @@ export function GoingGate() {
 
 export function GoingTicketLink({ className }: { className?: string }) {
   const { going } = useGoingList();
+  const config = useQuery(trpc.event.getPublicConfig.queryOptions());
   const confirmed = going.data?.confirmed.length;
   const pending = going.data?.pending.length;
   const countsReady = typeof confirmed === "number" && typeof pending === "number";
+  const capacity = config.data?.capacity;
+  const spotsLine =
+    countsReady && typeof capacity === "number"
+      ? `${confirmed}/${capacity} in, ${pending} still paying`
+      : countsReady
+        ? `${confirmed} in, ${pending} still paying`
+        : "See the rest of the room.";
 
   return (
     <Link to="/going" className={cn("mt-10 block w-full min-w-0 max-w-[22.5rem]", className)}>
@@ -85,9 +93,7 @@ export function GoingTicketLink({ className }: { className?: string }) {
           <span className="text-cyan">NOW</span>
         </div>
         <p className="text-lg text-ink">Who&apos;s going</p>
-        <p className="mt-1 text-sm text-ink-2">
-          {countsReady ? `${confirmed} in, ${pending} still paying` : "See the rest of the room."}
-        </p>
+        <p className="mt-1 text-sm text-ink-2">{spotsLine}</p>
       </div>
     </Link>
   );

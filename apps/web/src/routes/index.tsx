@@ -76,6 +76,21 @@ function HomeComponent() {
               <dt>In</dt>
               <dd>{formatPhp(config.data?.ticketPriceCentavos ?? 80000)}</dd>
             </div>
+            <div>
+              <dt>Spots</dt>
+              <dd>
+                {config.data
+                  ? `${config.data.confirmedCount}/${config.data.capacity}`
+                  : "—/15"}
+                <span className="mt-1 block text-[0.7em] tracking-normal">
+                  {config.data
+                    ? config.data.remainingSlots === 0
+                      ? "full"
+                      : `${config.data.remainingSlots} left`
+                    : "loading"}
+                </span>
+              </dd>
+            </div>
           </dl>
         </section>
 
@@ -113,7 +128,7 @@ function HomeComponent() {
 
       <section className="night-band night-band--magenta">
         <div className="night-band-photo" style={{ backgroundImage: `url(${bg1})` }} aria-hidden />
-        <dl className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 divide-y divide-on-magenta/25 md:grid-cols-3 md:divide-x md:divide-y-0">
+        <dl className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 divide-y divide-on-magenta/25 md:grid-cols-4 md:divide-x md:divide-y-0">
           <div className="px-4 py-6 md:px-8 md:py-8">
             <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Where</dt>
             <dd className="mt-3">
@@ -126,6 +141,23 @@ function HomeComponent() {
                 {config.data?.venue ?? "Tagu Cafe and Bar"}
               </a>
               <p className="mt-2 text-sm">VIP DJ booth table (the Good Seats)</p>
+            </dd>
+          </div>
+          <div className="px-4 py-6 md:px-8 md:py-8">
+            <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Spots</dt>
+            <dd className="mt-3">
+              <p className="font-year text-2xl leading-[0.95] tracking-wide md:text-3xl">
+                {config.data
+                  ? `${config.data.confirmedCount}/${config.data.capacity}`
+                  : "—/15"}
+              </p>
+              <p className="mt-2 text-sm">
+                {config.data
+                  ? config.data.remainingSlots === 0
+                    ? "Door list is full."
+                    : `${config.data.remainingSlots} left — claim yours.`
+                  : "Limited table."}
+              </p>
             </dd>
           </div>
           <div className="px-4 py-6 md:px-8 md:py-8">

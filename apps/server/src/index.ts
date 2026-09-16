@@ -74,6 +74,37 @@ app.post("/api/receipts", async (c) => {
   }
 });
 
+app.post("/api/admin/receipts/:userId", async (c) => {
+  const session = await sessionFromRequest(c.req.raw);
+  if (!session || !isAdminEmail(session.user.email)) {
+    return c.json({ error: "Admin only" }, 403);
+  }
+
+  const userId = c.req.param("userId");
+  if (!userId || userId.includes("..") || userId.includes("/")) {
+    return c.json({ error: "Invalid user" }, 400);
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  const body = await c.req.parseBody();
+  const file = body.file;
+  if (!(file instanceof File)) {
+    return c.json({ error: "Missing file" }, 400);
+  }
+
+  try {
+    const saved = await saveReceipt(userId, file);
+    return c.json(saved);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Upload failed";
+    return c.json({ error: message }, 400);
+  }
+});
+
 app.get("/api/receipts/:paymentId", async (c) => {
   const session = await sessionFromRequest(c.req.raw);
   if (!session || !isAdminEmail(session.user.email)) {
