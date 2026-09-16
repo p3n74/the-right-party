@@ -1,12 +1,14 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { cn } from "@the-right-party/ui/lib/utils";
+import { useState } from "react";
 
 import bg1 from "@/assets/bg1.jpg";
 import bg2 from "@/assets/bg2.jpg";
 import { GoingLanding } from "@/components/party/going-roll";
 import { GoogleButton } from "@/components/party/google-button";
 import { IpodTicket } from "@/components/party/ipod-ticket";
+import { JoinWaitlistRulesDialog } from "@/components/party/join-waitlist-rules";
 import { NightField } from "@/components/party/night-field";
 import { PartyCta } from "@/components/party/party-cta";
 import { SprayYearLockup } from "@/components/party/spray-year-lockup";
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/")({
 function HomeComponent() {
   const navigate = useNavigate();
   const { data: session } = authClient.useSession();
+  const [showJoinRules, setShowJoinRules] = useState(false);
   const config = useQuery(trpc.event.getPublicConfig.queryOptions());
   const me = useQuery({
     ...trpc.rsvp.me.queryOptions(),
@@ -71,7 +74,7 @@ function HomeComponent() {
             </div>
             <div>
               <dt>In</dt>
-              <dd>{formatPhp(config.data?.ticketPriceCentavos ?? 100000)}</dd>
+              <dd>{formatPhp(config.data?.ticketPriceCentavos ?? 80000)}</dd>
             </div>
           </dl>
         </section>
@@ -89,17 +92,24 @@ function HomeComponent() {
                   Your ticket
                 </PartyCta>
               ) : (
-                <PartyCta mark disabled={join.isPending} onClick={() => join.mutate({})}>
-                  {join.isPending ? "Loading_" : "Join the waitlist"}
+                <PartyCta mark onClick={() => setShowJoinRules(true)}>
+                  Join the waitlist
                 </PartyCta>
               )
             ) : (
               <GoogleButton configured={config.data?.googleAuthConfigured ?? false} />
             )}
           </div>
-          {join.isError ? <p className="mt-3 text-sm text-destructive">{join.error.message}</p> : null}
         </IpodTicket>
       </main>
+
+      <JoinWaitlistRulesDialog
+        open={showJoinRules && Boolean(session) && !alreadyIn}
+        joining={join.isPending}
+        error={join.isError ? join.error.message : null}
+        onConfirm={() => join.mutate({})}
+        onClose={() => setShowJoinRules(false)}
+      />
 
       <section className="night-band night-band--magenta">
         <div className="night-band-photo" style={{ backgroundImage: `url(${bg1})` }} aria-hidden />
@@ -122,9 +132,12 @@ function HomeComponent() {
             <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Pay</dt>
             <dd className="mt-3">
               <p className="font-year text-2xl leading-[0.95] tracking-wide md:text-3xl">
-                {formatPhp(config.data?.ticketPriceCentavos ?? 100000)}, drinks included
+                {formatPhp(config.data?.ticketPriceCentavos ?? 80000)}, drinks included
               </p>
               <p className="mt-2 text-sm">GoTyme / InstaPay</p>
+              <p className="mt-2 text-sm text-on-magenta/80">
+                Pay by the day before — or before the event.
+              </p>
             </dd>
           </div>
           <div className="px-4 py-6 md:px-8 md:py-8">
@@ -143,6 +156,10 @@ function HomeComponent() {
           <GoingLanding />
           <footer className="px-4 py-10 text-sm text-ink-2 md:px-8">
             <p>Disclaimer: we are not affiliated with DCISM or CISCO.</p>
+            <p className="mt-3 max-w-2xl">
+              Come around 11 PM. Venue capacity is strict — late arrivals may have to wait depending on capacity.
+              Please pay by the day before, or at least before the event.
+            </p>
           </footer>
         </div>
       </div>

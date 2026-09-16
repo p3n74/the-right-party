@@ -71,7 +71,7 @@ function AdminPage() {
       <div className="mx-auto max-w-5xl px-4 py-8 pt-24">
         <h1 className="font-year text-4xl tracking-wide">DOOR LIST</h1>
         <p className="mt-2 text-sm text-ink-2">
-          {formatPhp(list.data?.stats.ticketPriceCentavos ?? 100000)} · {list.data?.stats.confirmed ?? 0}/
+          {formatPhp(list.data?.stats.ticketPriceCentavos ?? 80000)} · {list.data?.stats.confirmed ?? 0}/
           {list.data?.stats.capacity ?? 80} confirmed · {list.data?.stats.venue}
         </p>
 

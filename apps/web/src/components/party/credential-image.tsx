@@ -43,7 +43,7 @@ export function CredentialImage({
   }, [path]);
 
   if (!src) {
-    return <div className={className ?? "aspect-square bg-qr-paper"} />;
+    return <div className={className ?? "size-full min-h-[10rem] bg-qr-paper"} aria-hidden />;
   }
 
   return <img src={src} alt={alt} className={className} />;

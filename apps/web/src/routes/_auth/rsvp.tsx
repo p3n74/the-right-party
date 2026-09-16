@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { CredentialImage } from "@/components/party/credential-image";
 import { GoingTicketLink } from "@/components/party/going-roll";
 import { IpodTicket } from "@/components/party/ipod-ticket";
+import { JoinWaitlistRulesDialog } from "@/components/party/join-waitlist-rules";
 import { NightField } from "@/components/party/night-field";
 import { PartyCta } from "@/components/party/party-cta";
 import { SprayYearLockup } from "@/components/party/spray-year-lockup";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_auth/rsvp")({
 type Me = inferRouterOutputs<AppRouter>["rsvp"]["me"];
 
 function RsvpPage() {
+  const [showJoinRules, setShowJoinRules] = useState(false);
   const me = useQuery({
     ...trpc.rsvp.me.queryOptions(),
     refetchInterval: 15_000,
@@ -31,6 +33,7 @@ function RsvpPage() {
   const join = useMutation(
     trpc.rsvp.joinWaitlist.mutationOptions({
       onSuccess: () => {
+        setShowJoinRules(false);
         void me.refetch();
       },
       onError: (error) => toast.error(error.message),
@@ -65,11 +68,10 @@ function RsvpPage() {
           ) : me.data ? (
             <RsvpLcd
               me={me.data}
-              joining={join.isPending}
               venue={venue}
               when={when}
               time={time}
-              onJoin={() => join.mutate({})}
+              onShowRules={() => setShowJoinRules(true)}
             />
           ) : (
             <p className="text-sm text-destructive">Couldn&apos;t load your ticket.</p>
@@ -77,24 +79,29 @@ function RsvpPage() {
         </IpodTicket>
         <GoingTicketLink />
       </div>
+
+      <JoinWaitlistRulesDialog
+        open={showJoinRules}
+        joining={join.isPending}
+        onConfirm={() => join.mutate({})}
+        onClose={() => setShowJoinRules(false)}
+      />
     </NightField>
   );
 }
 
 function RsvpLcd({
   me,
-  joining,
   venue,
   when,
   time,
-  onJoin,
+  onShowRules,
 }: {
   me: Me;
-  joining: boolean;
   venue: string;
   when: string;
   time: string;
-  onJoin: () => void;
+  onShowRules: () => void;
 }) {
   const status = me.rsvp?.status;
 
@@ -104,10 +111,10 @@ function RsvpLcd({
         <p className="font-pixel text-[11px] tracking-widest text-magenta">AFTERPARTY</p>
         <p className="mt-3 text-xl text-ink">Get on the list.</p>
         <p className="mt-2 text-sm text-ink-2">
-          {venue}. VIP DJ booth table (the Good Seats). {time}. ₱1,000.
+          {venue}. VIP DJ booth table (the Good Seats). {time}. ₱800.
         </p>
-        <PartyCta className="mt-5" mark disabled={joining} onClick={onJoin}>
-          {joining ? "Loading_" : "Join the waitlist"}
+        <PartyCta className="mt-5" mark onClick={onShowRules}>
+          Join the waitlist
         </PartyCta>
       </div>
     );
@@ -132,9 +139,9 @@ function RsvpLcd({
     return (
       <div>
         <StatusChip status={status} />
-        <p className="mt-3 text-xl text-ink">Scan to pay {formatPhp(pay?.amountCentavos ?? 100000)}.</p>
+        <p className="mt-3 text-xl text-ink">Scan to pay {formatPhp(pay?.amountCentavos ?? 80000)}.</p>
         <p className="mt-2 text-sm text-ink">{pay?.gcashName ?? "Nikolai Tristan Pazon"}</p>
-        <p className="mt-1 text-xs text-ink-2">Code sits under this screen.</p>
+        <p className="mt-1 text-xs text-ink-2">QR + receipt under this screen.</p>
       </div>
     );
   }
@@ -163,6 +170,9 @@ function RsvpLcd({
           <br />
           {when}
         </p>
+        <p className="mt-3 text-xs text-ink-2">
+          Come around 11 PM — venue capacity is strict; late arrivals may have to wait depending on capacity.
+        </p>
       </div>
     );
   }
@@ -172,8 +182,8 @@ function RsvpLcd({
       <div>
         <StatusChip status={status} />
         <p className="mt-4 text-xl text-ink">That spot isn&apos;t held anymore.</p>
-        <PartyCta className="mt-5" mark disabled={joining} onClick={onJoin}>
-          {joining ? "Loading_" : "Join the waitlist"}
+        <PartyCta className="mt-5" mark onClick={onShowRules}>
+          Join the waitlist
         </PartyCta>
       </div>
     );
@@ -253,14 +263,18 @@ function PayTray({
 
   return (
     <div>
-      <CredentialImage
-        path={pay?.gcashQrUrl ?? "/api/payment-qr/gcash"}
-        alt="GoTyme InstaPay payment QR"
-        className="mx-auto min-h-[160px] min-w-[160px] w-full max-w-[220px] bg-qr-paper p-2"
-      />
-      <p className="mt-2 text-center text-xs text-paper">{pay?.gcashNumber ?? "GoTyme / InstaPay"}</p>
+      <div className="ipod-qr-well">
+        <CredentialImage
+          path={pay?.gcashQrUrl ?? "/api/payment-qr/gcash"}
+          alt="GoTyme InstaPay payment QR"
+        />
+      </div>
+      <p className="ipod-tray-meta">
+        <strong>{pay?.gcashNumber ?? "GoTyme / InstaPay"}</strong>
+        Pay by the day before, or before the event.
+      </p>
       {pay?.usingPlaceholderQr ? (
-        <p className="mt-2 text-xs text-paper/80">Stand-in QR. Don&apos;t send money until the real code is up.</p>
+        <p className="ipod-tray-meta">Stand-in QR. Don&apos;t send money until the real code is up.</p>
       ) : null}
       <label className="ipod-drop">
         {file ? file.name : "Drop your receipt."}
@@ -272,7 +286,7 @@ function PayTray({
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
       </label>
-      <PartyCta className="mt-3" disabled={busy || markPaid.isPending} onClick={() => void submit()}>
+      <PartyCta disabled={busy || markPaid.isPending} onClick={() => void submit()}>
         {busy || markPaid.isPending ? "Loading_" : resubmit ? "Send it again" : "I already paid"}
       </PartyCta>
     </div>

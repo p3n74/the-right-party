@@ -29,7 +29,7 @@ export async function ensureEventConfig(prisma: PrismaClient) {
       mainEventEndsAt: MAIN_EVENT_ENDS_AT,
       mainEventDresscode: "Wrong Party",
       capacity: 80,
-      ticketPriceCentavos: 100_000,
+      ticketPriceCentavos: 80_000,
       currency: "PHP",
       paymentWindowHours: 48,
       requireReceipt: true,
@@ -46,6 +46,12 @@ export async function ensureEventConfig(prisma: PrismaClient) {
     await prisma.eventConfig.update({
       where: { id: 1 },
       data: { name: "Acquaintance Afterparty" },
+    });
+  }
+  if (row && row.ticketPriceCentavos === 100_000) {
+    await prisma.eventConfig.update({
+      where: { id: 1 },
+      data: { ticketPriceCentavos: 80_000 },
     });
   }
   if (

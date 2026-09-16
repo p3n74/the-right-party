@@ -34,7 +34,7 @@ model EventConfig {
   mainEventEndsAt        DateTime?
   mainEventDresscode     String   @default("Wrong Party")
   capacity               Int      @default(80)
-  ticketPriceCentavos    Int      @default(100000)
+  ticketPriceCentavos    Int      @default(80000)
   currency               String   @default("PHP")
   paymentWindowHours     Int      @default(48)
   requireReceipt         Boolean  @default(true)
