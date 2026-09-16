@@ -65,17 +65,24 @@ export function JoinWaitlistRulesDialog({
           id="join-rules-title"
           className="mt-2 font-year text-[1.75rem] leading-none tracking-wide text-ink sm:mt-3 sm:text-4xl"
         >
-          Two things.
+          Three things.
         </h2>
         <ol className="mt-4 space-y-3.5 text-[0.95rem] leading-snug text-ink sm:mt-5 sm:space-y-4 sm:text-base">
           <li className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
             <span className="font-pixel text-[11px] text-magenta">01</span>
             <span className="min-w-0">
-              Come around 11 PM. Venue capacity is strict — late arrivals may have to wait depending on capacity.
+              Only 15 confirmed seats. Joining shows interest — you&apos;re part of the 15 once
+              we confirm you.
             </span>
           </li>
           <li className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
             <span className="font-pixel text-[11px] text-magenta">02</span>
+            <span className="min-w-0">
+              Come around 11 PM. Venue capacity is strict — late arrivals may have to wait depending on capacity.
+            </span>
+          </li>
+          <li className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+            <span className="font-pixel text-[11px] text-magenta">03</span>
             <span className="min-w-0">Pay by the day before, or at least before the event.</span>
           </li>
         </ol>

@@ -141,7 +141,9 @@ function RsvpLcd({
         <StatusChip status={status} />
         <p className="mt-3 text-xl text-ink">Scan to pay {formatPhp(pay?.amountCentavos ?? 80000)}.</p>
         <p className="mt-2 text-sm text-ink">{pay?.gcashName ?? "Nikolai Tristan Pazon"}</p>
-        <p className="mt-1 text-xs text-ink-2">QR + receipt under this screen.</p>
+        <p className="mt-1 text-xs text-ink-2">
+          QR + receipt under this screen. Paying gets you reviewed — only confirmation locks a seat.
+        </p>
       </div>
     );
   }
@@ -151,7 +153,9 @@ function RsvpLcd({
       <div>
         <StatusChip status={status} />
         <p className="mt-4 text-xl text-ink">Receipt&apos;s in.</p>
-        <p className="mt-2 text-sm text-ink-2">We&apos;ll confirm your spot. Don&apos;t pay twice.</p>
+        <p className="mt-2 text-sm text-ink-2">
+          We&apos;ll confirm your spot if one of the 15 is still open. Don&apos;t pay twice.
+        </p>
       </div>
     );
   }

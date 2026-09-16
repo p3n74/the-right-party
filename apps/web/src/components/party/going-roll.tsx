@@ -80,9 +80,9 @@ export function GoingTicketLink({ className }: { className?: string }) {
   const capacity = config.data?.capacity;
   const spotsLine =
     countsReady && typeof capacity === "number"
-      ? `${confirmed}/${capacity} in, ${pending} still paying`
+      ? `${confirmed}/${capacity} confirmed, ${pending} interested`
       : countsReady
-        ? `${confirmed} in, ${pending} still paying`
+        ? `${confirmed} confirmed, ${pending} interested`
         : "See the rest of the room.";
 
   return (
@@ -115,6 +115,7 @@ export function GoingRoll({
   footer?: ReactNode;
 }) {
   const Title = titleAs;
+  const config = useQuery(trpc.event.getPublicConfig.queryOptions());
 
   if (loading && !data) {
     return (
@@ -136,22 +137,26 @@ export function GoingRoll({
 
   const confirmed = data?.confirmed ?? [];
   const pending = data?.pending ?? [];
+  const capacity = config.data?.capacity ?? 15;
 
   return (
     <div>
       <Title className="font-year text-4xl tracking-wide md:text-5xl">Who&apos;s going</Title>
+      <p className="mt-3 max-w-xl text-sm text-ink-2">
+        Only confirmed guests count toward the {capacity}. Everyone else is just interested for now.
+      </p>
       <GoingGroup
         lcd="NOW PLAYING"
         phosphor
-        count={`${confirmed.length} in`}
-        empty="No one's through payment yet."
+        count={`${confirmed.length}/${capacity} confirmed`}
+        empty="No one confirmed yet."
         guests={confirmed}
         tone="in"
         layout={layout}
       />
       <GoingGroup
-        lcd="WAITLIST"
-        count={`${pending.length} still paying`}
+        lcd="INTERESTED"
+        count={`${pending.length} interested`}
         empty="Nobody's on it yet."
         guests={pending}
         tone="wait"

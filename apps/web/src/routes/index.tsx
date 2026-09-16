@@ -77,7 +77,7 @@ function HomeComponent() {
               <dd>{formatPhp(config.data?.ticketPriceCentavos ?? 80000)}</dd>
             </div>
             <div>
-              <dt>Spots</dt>
+              <dt>Confirmed</dt>
               <dd>
                 {config.data
                   ? `${config.data.confirmedCount}/${config.data.capacity}`
@@ -85,8 +85,8 @@ function HomeComponent() {
                 <span className="mt-1 block text-[0.7em] tracking-normal">
                   {config.data
                     ? config.data.remainingSlots === 0
-                      ? "full"
-                      : `${config.data.remainingSlots} left`
+                      ? "all locked in"
+                      : `${config.data.remainingSlots} seats left`
                     : "loading"}
                 </span>
               </dd>
@@ -144,7 +144,7 @@ function HomeComponent() {
             </dd>
           </div>
           <div className="px-4 py-6 md:px-8 md:py-8">
-            <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Spots</dt>
+            <dt className="font-pixel text-[10px] tracking-[0.2em] text-on-magenta/65">Confirmed</dt>
             <dd className="mt-3">
               <p className="font-year text-2xl leading-[0.95] tracking-wide md:text-3xl">
                 {config.data
@@ -154,9 +154,9 @@ function HomeComponent() {
               <p className="mt-2 text-sm">
                 {config.data
                   ? config.data.remainingSlots === 0
-                    ? "Door list is full."
-                    : `${config.data.remainingSlots} left — claim yours.`
-                  : "Limited table."}
+                    ? "All 15 confirmed. You can still show interest."
+                    : `${config.data.remainingSlots} seats left. Interest is free — confirmation locks you in.`
+                  : "15 confirmed seats. Joining is interest only."}
               </p>
             </dd>
           </div>
